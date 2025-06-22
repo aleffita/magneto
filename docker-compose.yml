@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: magneto-transmission
+    environment:
+      - PUID=1000 # Verifique seu User ID com `id -u`
+      - PGID=1000 # Verifique seu Group ID com `id -g`
+      - TZ=America/Sao_Paulo
+      - TRANSMISSION_WEB_HOME=/combustion-release/ # UI alternativa e mais moderna
+    volumes:
+      - ./transmission-config:/config
+      - /home/alefita/jellyfin/media:/downloads # Mapeia o diretório de mídia para downloads
+      - ./watch:/watch
+    ports:
+      - "9091:9091" # Porta da API RPC
+      - "51413:51413"
+      - "51413:51413/udp"
+    restart: unless-stopped
+
+  magneto-app:
+    container_name: magneto-app
+    build:
+      context: ./app
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mapeia o diretório de mídia como somente leitura para listar as pastas
+      - /home/alefita/jellyfin/media:/media:ro
+      # Mapeia o código da aplicação para desenvolvimento com hot-reload
+      - ./app:/app
+      - /app/node_modules
+    depends_on:
+      - transmission
+    restart: unless-stopped
